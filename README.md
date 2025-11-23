@@ -43,19 +43,19 @@ către ISIC prin următorul link: <https://www.isic-archive.com/>
 
 ### 2\. Etapa de preprocesare
 
-2.1. Redimensionare rezoluție fixă
+**2.1. Redimensionare rezoluție fixă**
 
   - imaginile originale pot avea dimensiuni diferite, orientări diferite sau
 rapoarte de aspect variabile. Pentru o consistență între imagini sau
 pentru a permite o procesare unitară în rețea, imaginile vor fi scalate
 la o rezoluție standard.
 
-2.2. Normalizare pixeli
+**2.2. Normalizare pixeli**
   - valorile pixelilor pot aduce multe variații de iluminare. Astfel, pentru
 a îmbunătăți stabilitatea optimizării în timpul antrenării, vom converti
 valorile pixelilor din intervalul 0-255, într-un interval standard.
 
-2.3. Augmentare
+**2.3. Augmentare**
   - imaginile primite din input, pot fi realizate din diverse unghiuri sau
 anumite poziții care pot îndepărta acuratețea rezultatelor de cele
 dorite la finalul acestui experiment. Astfel, prin trecerea imaginilor
@@ -64,7 +64,7 @@ face un flip, o scalare sau o reglare de contrast, cu scopul de a spori
 acuratețea rezultatelor la final și pentru a generaliza modelul la
 anumite imagini model clasice.
 
-2.4. Funcția de remediere a obiectelor
+**2.4. Funcția de remediere a obiectelor**
    - constă în implementarea unor filtre speciale pentru îmbunătățirea
 calității imaginii, evidențiind structura reală a leziunii, prin
 îndepărtarea firelor de păr, a reflexiilor din poză, a ramelor negre,
@@ -72,23 +72,23 @@ sau a altor factori ce pot afecta structura leziunii țintă.
 
 ### 3. Etapa de segmentare (Arhitectura U^2-Net)
 
-3.1. Encoder (Codificatorul)
+**3.1. Encoder (Codificatorul)**
 - Spre deosebire de U-Net-ul clasic, encoderul U^2-Net este compus din 6 etape, fiecare etapă fiind constituită din blocuri **RSU (Residual U-blocks)**.
   Practic, fiecare bloc al encoderului conține la rândul său o structură internă de tip U-Net.
   Aceste blocuri permit extragerea caracteristicilor multi-scalare (atât detalii locale, cât și context global) direct în interiorul fiecărui strat,
   fără a degrada rezoluția hărților de caracteristici prea rapid.
 
-3.2. Bottleneck (Zona de adâncime)
+**3.2. Bottleneck (Zona de adâncime)**
 - Reprezintă punctul de cea mai mare adâncime a rețelei (etapele En_5, En_6 și De_5). Aici, U^2-Net utilizează blocuri speciale **RSU-4F** bazate pe **convoluții dilatate** (dilated convolutions).
   Scopul este de a capta caracteristici globale și contextuale extinse fără a mai reduce rezoluția spațială (downsampling),
   prevenind astfel pierderea detaliilor fine ale leziunii care s-ar produce prin micșorarea excesivă a imaginii.
 
-3.3. Decoder (Decodificatorul)
+**3.3. Decoder (Decodificatorul)**
 - Are rolul de a reconstrui rezoluția spațială a imaginii, similar encoderului, fiind structurat tot pe blocuri RSU. Acesta primește informații de la encoder
   prin **conexiuni de sărit (skip connections)**, concatenând hărțile de caracteristici de rezoluție înaltă din encoder cu cele procesate din decoder.
   Particularitatea U^2-Net este că generează o hartă de segmentare intermediară (Side Output) la fiecare etapă a decoderului, permițând o supervizare profundă a antrenării.
 
-3.4. Fuziunea și Rezultatul Final
+**3.4. Fuziunea și Rezultatul Final**
 - La finalul etapei de segmentare, nu avem o singură ieșire, ci 6 hărți de probabilitate generate de fiecare nivel al decoderului.
   Acestea sunt readuse la dimensiunea originală prin up-sampling și concatenate. Printr-o operație de convoluție finală 1x1, aceste hărți sunt **fuzionate**
   pentru a genera rezultatul final. Această strategie asigură că segmentarea finală beneficiază atât de detaliile fine (de la straturile superficiale),
@@ -96,20 +96,20 @@ sau a altor factori ce pot afecta structura leziunii țintă.
 
 ### 4\. Etapa de postprocesare
 
-4.1. Rafinarea măștii
+**4.1. Rafinarea măștii**
 
   - constă în aplicarea unor operații de netezire, clarificare a conturului,
 sau de eliminarea pixelilor izolați. Aceste operații sunt realizate, ca
 urmare a unor erori la marginile măștii brute.
 
-4.2. Morfologie binară
+**4.2. Morfologie binară**
 
   - pentru îmbunătățirea calității vizuale și structurale a măștii, se
 realizează extinderi ale anumitor zone din cadrul imaginii, reduceri de
 structuri din cadrul imaginii prin eroziuni și operații de netezire a
 conturului.
 
-4.3. Umplere goluri
+**4.3. Umplere goluri**
   - spațiile rămase în interiorul măștii sunt completate pentru a produce un
 obiect compact, uniform și continuu.
 
