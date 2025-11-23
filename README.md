@@ -22,11 +22,11 @@ din cauza variațiilor de culoare, formă și textură, iar evaluarea
 vizuală poate deveni subiectivă. Astfel, se utilizează metode automate
 de analiză și segmentare a imaginilor.
 
-În această lucrare vom implementa și evalua arhitectura U$^2$-Net, o evoluție 
+În această lucrare vom implementa și evalua arhitectura U^2-Net, o evoluție 
 avansată a modelului clasic, caracterizată printr-o structură imbricată de tip „U-în-U” (ReSidual U-blocks). 
 Această arhitectură este concepută pentru a captura informații contextuale la scări multiple, fiind capabilă 
 să segmenteze detalii fine fără a pierde informația globală și fără a necesita un cost computațional excesiv. 
-Scopul lucrării este reprezentat ca și experiment didactic despre modul în care U$^2$-Net poate îmbunătăți 
+Scopul lucrării este reprezentat ca și experiment didactic despre modul în care U^2-Net poate îmbunătăți 
 detectarea automată a leziunilor pielii față de metodele standard, parcurgând etapele complete de preprocesare, 
 antrenare deep learning și postprocesare a măștilor de segmentare.
 
