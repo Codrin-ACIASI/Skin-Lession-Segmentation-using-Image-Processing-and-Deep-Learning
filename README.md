@@ -35,7 +35,7 @@ antrenare deep learning și postprocesare a măștilor de segmentare, dar și o 
 
 > **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net) 
 
-![Schema u2-net](ImaginiProiect/schema_u2_net.jpg)
+![Schema u2-net](ImaginiProiect/schema_u2_net.png)
 
 > Această implementare are un caracter strict didactic. Deși aplicată pe un set de date medical (segmentarea leziunilor cutanate), **obiectivul principal al lucrării este aprofundarea tehnicilor avansate de Procesare a Imaginilor (Image Processing)** și înțelegerea modului în care rețelele neuronale profunde pot extrage caracteristici vizuale complexe. Secundar, proiectul urmărește familiarizarea cu provocările specifice imagisticii medicale (zgomot, contrast scăzut, forme neregulate).
 
