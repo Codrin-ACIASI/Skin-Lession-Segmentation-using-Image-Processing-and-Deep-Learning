@@ -1,0 +1,7 @@
+Dataset_test/
+Dataset_training/
+__pychache__/
+saved_models/
+.venv/
+
+!Dataset_test/u2net_results/
