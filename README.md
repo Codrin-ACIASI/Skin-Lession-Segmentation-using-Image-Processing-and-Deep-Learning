@@ -33,7 +33,7 @@ antrenare deep learning și postprocesare a măștilor de segmentare, dar și o 
 
 ## Arhitectura U^2-Net
 
-> **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net), scrisă de către Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and > Martin Jagersand
+> **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net), scris de către Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and > Martin Jagersand
 
 ![Schema u2-net](ImaginiProiect/schema_u2_net.png)
 
