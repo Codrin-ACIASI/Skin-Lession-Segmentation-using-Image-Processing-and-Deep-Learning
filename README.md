@@ -2,19 +2,22 @@
 
 # Segmentarea leziunilor de piele
 
+> Acest proiect a fost realizat de către Bejenariu Codrin-Gigel și Condurache Gabriel-Florin
+
 ## Cuprins
 
 1. [Introducere](#introducere)
-2. [Arhitectura proiectului](#arhitectura-proiectului)
+2. [Arhitectura U^2-Net](#arhitectura-u2-net)
+3. [Arhitectura proiectului](#arhitectura-proiectului)
     - [Input](#1-input)
     - [Etapa de preprocesare](#2-etapa-de-preprocesare)
-    - [Etapa de segmentare](#3-etapa-de-segmentare)
+    - [Etapa de segmentare](#3-etapa-de-segmentare-arhitectura-u2-net)
     - [Etapa de postprocesare](#4-etapa-de-postprocesare)
     - [Output](#5-output)
     - [Compararea rezultatelor](#6-compararea-rezultatelor)
-3. [Rezultate](#rezultate)
-4. [Componente Software și Hardware](#componente-software-și-hardware)
-5. [Referințe bibliografice](#referințe-bibliografice)
+4. [Rezultate](#rezultate)
+5. [Componente Software și Hardware](#componente-software-și-hardware)
+6. [Referințe bibliografice](#referințe-bibliografice)
 
 ## Introducere
 În medicina modernă, identificarea leziunilor cutanate poate fi dificilă
@@ -22,12 +25,21 @@ din cauza variațiilor de culoare, formă și textură, iar evaluarea
 vizuală poate deveni subiectivă. Astfel, se utilizează metode automate
 de analiză și segmentare a imaginilor.
 
-În această lucrare vom folosi și studia arhitectura **U-Net**, un
-model de rețea neuronală conceput pentru segmentare, capabil să ofere
-rezultate precise chiar și pe seturi de date reduse. Scopul lucrării
-este reprezentat ca și experiment didactic despre modul în care U-Net
-poate fi aplicat pentru detectarea automată a leziunilor pielii, prin
-etape de preprocesare, antrenare și postprocesare a imaginilor.
+În această lucrare vom implementa și evalua arhitectura U^2-Net, o evoluție 
+avansată a modelului clasic, caracterizată printr-o structură imbricată de tip „U-în-U” (ReSidual U-blocks). 
+Această arhitectură este concepută pentru a captura informații contextuale la scări multiple, fiind capabilă 
+să segmenteze detalii fine fără a pierde informația globală și fără a necesita un cost computațional excesiv. 
+Scopul lucrării este reprezentat ca și experiment didactic despre modul în care U^2-Net poate îmbunătăți 
+detectarea automată a leziunilor pielii față de metodele standard, parcurgând etapele complete de preprocesare, 
+antrenare deep learning și postprocesare a măștilor de segmentare, dar și o familiarizare mai amânuntă.
+
+## Arhitectura U^2-Net
+
+> **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net), scris de către Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane și Martin Jagersand
+
+![Schema u2-net](ImaginiProiect/schema_u2_net.png)
+
+> Această implementare are un caracter strict didactic. Deși aplicată pe un set de date medical (segmentarea leziunilor cutanate), **obiectivul principal al lucrării este aprofundarea tehnicilor avansate de Procesare a Imaginilor (Image Processing)** și înțelegerea modului în care rețelele neuronale profunde pot extrage caracteristici vizuale complexe. Secundar, proiectul urmărește familiarizarea cu provocările specifice imagisticii medicale (zgomot, contrast scăzut, forme neregulate).
 
 ## Arhitectura Proiectului
 
@@ -42,19 +54,19 @@ către ISIC prin următorul link: <https://www.isic-archive.com/>
 
 ### 2\. Etapa de preprocesare
 
-2.1. Redimensionare rezoluție fixă
+**2.1. Redimensionare rezoluție fixă**
 
   - imaginile originale pot avea dimensiuni diferite, orientări diferite sau
 rapoarte de aspect variabile. Pentru o consistență între imagini sau
 pentru a permite o procesare unitară în rețea, imaginile vor fi scalate
 la o rezoluție standard.
 
-2.2. Normalizare pixeli
+**2.2. Normalizare pixeli**
   - valorile pixelilor pot aduce multe variații de iluminare. Astfel, pentru
 a îmbunătăți stabilitatea optimizării în timpul antrenării, vom converti
 valorile pixelilor din intervalul 0-255, într-un interval standard.
 
-2.3. Augmentare
+**2.3. Augmentare**
   - imaginile primite din input, pot fi realizate din diverse unghiuri sau
 anumite poziții care pot îndepărta acuratețea rezultatelor de cele
 dorite la finalul acestui experiment. Astfel, prin trecerea imaginilor
@@ -63,56 +75,52 @@ face un flip, o scalare sau o reglare de contrast, cu scopul de a spori
 acuratețea rezultatelor la final și pentru a generaliza modelul la
 anumite imagini model clasice.
 
-2.4. Funcția de remediere a obiectelor
+**2.4. Funcția de remediere a obiectelor**
    - constă în implementarea unor filtre speciale pentru îmbunătățirea
 calității imaginii, evidențiind structura reală a leziunii, prin
 îndepărtarea firelor de păr, a reflexiilor din poză, a ramelor negre,
 sau a altor factori ce pot afecta structura leziunii țintă.
 
-### 3\. Etapa de segmentare
+### 3. Etapa de segmentare (Arhitectura U^2-Net)
 
-3.1. Encoder 
-  - reprezintă aplicarea în straturi repetate a anumitor
-operații, cum ar fi Convoluția, Funcția de activare (ReLU) și Max
-Pooling. Aceste funcții au ca scop extracția caracteristicilor locale și
-contextuale, reducând dimensiuni spațiale ale imaginii.
+**3.1. Encoder (Codificatorul)**
+- Spre deosebire de U-Net-ul clasic, encoderul U^2-Net este compus din 6 etape, fiecare etapă fiind constituită din blocuri **RSU (Residual U-blocks)**.
+  Practic, fiecare bloc al encoderului conține la rândul său o structură internă de tip U-Net.
+  Aceste blocuri permit extragerea caracteristicilor multi-scalare (atât detalii locale, cât și context global) direct în interiorul fiecărui strat,
+  fără a degrada rezoluția hărților de caracteristici prea rapid.
 
-3.2. Bottleneck 
-  - reprezintă punctul de cea mai mică rezoluție spațială
-și cea mai mare adâncime a caracteristicilor. Acest pas se împarte în
-două straturi (convoluție cu Batch Normalization și activare) pentru a
-rafina setul de caracteristici înainte de a începe calea de expansiune.
+**3.2. Bottleneck (Zona de adâncime)**
+- Reprezintă punctul de cea mai mare adâncime a rețelei (etapele En_5, En_6 și De_5). Aici, U^2-Net utilizează blocuri speciale **RSU-4F** bazate pe **convoluții dilatate** (dilated convolutions).
+  Scopul este de a capta caracteristici globale și contextuale extinse fără a mai reduce rezoluția spațială (downsampling),
+  prevenind astfel pierderea detaliilor fine ale leziunii care s-ar produce prin micșorarea excesivă a imaginii.
 
-3.3. Decoder  
-  - are ca scop reconstrucția rezoluției spațiale a imaginii
-segmentate din caracteristicile profunde extrase de Encoder. Acest strat
-al arhitecturii constă din doi pași, cum ar fi Up-sampling (Transposed
-Convolution) care mărește dimensiunea spațială a hărților de
-caracteristici, și concatenarea cu Conexiunile de Sărit, adică
-informațiile de detaliu din calea encoder vor fi transferate la decoder
-în rezoluții similare.
+**3.3. Decoder (Decodificatorul)**
+- Are rolul de a reconstrui rezoluția spațială a imaginii, similar encoderului, fiind structurat tot pe blocuri RSU. Acesta primește informații de la encoder
+  prin **conexiuni de sărit (skip connections)**, concatenând hărțile de caracteristici de rezoluție înaltă din encoder cu cele procesate din decoder.
+  Particularitatea U^2-Net este că generează o hartă de segmentare intermediară (Side Output) la fiecare etapă a decoderului, permițând o supervizare profundă a antrenării.
 
-3.4. Convoluție  
-  - la finalul întregii etape de segmentare, pentru a
-obține o hartă de probabilitate, fiecare pixel având o valoare
-subunitară, indicând probabilitatea de apartenență la leziune.
+**3.4. Fuziunea și Rezultatul Final**
+- La finalul etapei de segmentare, nu avem o singură ieșire, ci 6 hărți de probabilitate generate de fiecare nivel al decoderului.
+  Acestea sunt readuse la dimensiunea originală prin up-sampling și concatenate. Printr-o operație de convoluție finală 1x1, aceste hărți sunt **fuzionate**
+  pentru a genera rezultatul final. Această strategie asigură că segmentarea finală beneficiază atât de detaliile fine (de la straturile superficiale),
+  cât și de contextul semantic (de la straturile profunde).
 
 ### 4\. Etapa de postprocesare
 
-4.1. Rafinarea măștii
+**4.1. Rafinarea măștii**
 
   - constă în aplicarea unor operații de netezire, clarificare a conturului,
 sau de eliminarea pixelilor izolați. Aceste operații sunt realizate, ca
 urmare a unor erori la marginile măștii brute.
 
-4.2. Morfologie binară
+**4.2. Morfologie binară**
 
   - pentru îmbunătățirea calității vizuale și structurale a măștii, se
 realizează extinderi ale anumitor zone din cadrul imaginii, reduceri de
 structuri din cadrul imaginii prin eroziuni și operații de netezire a
 conturului.
 
-4.3. Umplere goluri
+**4.3. Umplere goluri**
   - spațiile rămase în interiorul măștii sunt completate pentru a produce un
 obiect compact, uniform și continuu.
 

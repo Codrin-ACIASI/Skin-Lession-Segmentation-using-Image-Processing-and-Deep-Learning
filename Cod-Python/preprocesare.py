@@ -15,198 +15,201 @@ from PIL import Image
 
 #==========================dataset load==========================
 
-
-
-
-class RescaleT(object):
-
-	def __init__(self,output_size):
-		assert isinstance(output_size,(int,tuple))
-		self.output_size = output_size
-
-	def __call__(self,sample):
-		imidx, image, label = sample['imidx'], sample['image'],sample['label']
-
-		h, w = image.shape[:2]
-
-		if isinstance(self.output_size,int):
-			if h > w:
-				new_h, new_w = self.output_size*h/w,self.output_size
-			else:
-				new_h, new_w = self.output_size,self.output_size*w/h
-		else:
-			new_h, new_w = self.output_size
-
-		new_h, new_w = int(new_h), int(new_w)
-
-		# #resize the image to new_h x new_w and convert image from range [0,255] to [0,1]
-		# img = transform.resize(image,(new_h,new_w),mode='constant')
-		# lbl = transform.resize(label,(new_h,new_w),mode='constant', order=0, preserve_range=True)
-
-		img = transform.resize(image,(self.output_size,self.output_size),mode='constant')
-		lbl = transform.resize(label,(self.output_size,self.output_size),mode='constant', order=0, preserve_range=True)
-
-		return {'imidx':imidx, 'image':img,'label':lbl}
-
-
-class RandomCrop(object):
-
-	def __init__(self,output_size):
-		assert isinstance(output_size, (int, tuple))
-		if isinstance(output_size, int):
-			self.output_size = (output_size, output_size)
-		else:
-			assert len(output_size) == 2
-			self.output_size = output_size
-	def __call__(self,sample):
-		imidx, image, label = sample['imidx'], sample['image'], sample['label']
-
-		if random.random() >= 0.5:
-			image = image[::-1]
-			label = label[::-1]
-
-		h, w = image.shape[:2]
-		new_h, new_w = self.output_size
-
-		top = np.random.randint(0, h - new_h)
-		left = np.random.randint(0, w - new_w)
-
-		image = image[top: top + new_h, left: left + new_w]
-		label = label[top: top + new_h, left: left + new_w]
-
-		return {'imidx':imidx,'image':image, 'label':label}
-
-class ToTensorLab(object):
-	"""Convert ndarrays in sample to Tensors."""
-	def __init__(self,flag=0):
-		self.flag = flag
-
-	def __call__(self, sample):
-
-		imidx, image, label =sample['imidx'], sample['image'], sample['label']
-
-		tmpLbl = np.zeros(label.shape)
-
-		if(np.max(label)<1e-6):
-			label = label
-		else:
-			label = label/np.max(label)
-
-		# change the color space
-		if self.flag == 2: # with rgb and Lab colors
-			tmpImg = np.zeros((image.shape[0],image.shape[1],6))
-			tmpImgt = np.zeros((image.shape[0],image.shape[1],3))
-			if image.shape[2]==1:
-				tmpImgt[:,:,0] = image[:,:,0]
-				tmpImgt[:,:,1] = image[:,:,0]
-				tmpImgt[:,:,2] = image[:,:,0]
-			else:
-				tmpImgt = image
-			tmpImgtl = color.rgb2lab(tmpImgt)
-
-			# nomalize image to range [0,1]
-			tmpImg[:,:,0] = (tmpImgt[:,:,0]-np.min(tmpImgt[:,:,0]))/(np.max(tmpImgt[:,:,0])-np.min(tmpImgt[:,:,0]))
-			tmpImg[:,:,1] = (tmpImgt[:,:,1]-np.min(tmpImgt[:,:,1]))/(np.max(tmpImgt[:,:,1])-np.min(tmpImgt[:,:,1]))
-			tmpImg[:,:,2] = (tmpImgt[:,:,2]-np.min(tmpImgt[:,:,2]))/(np.max(tmpImgt[:,:,2])-np.min(tmpImgt[:,:,2]))
-			tmpImg[:,:,3] = (tmpImgtl[:,:,0]-np.min(tmpImgtl[:,:,0]))/(np.max(tmpImgtl[:,:,0])-np.min(tmpImgtl[:,:,0]))
-			tmpImg[:,:,4] = (tmpImgtl[:,:,1]-np.min(tmpImgtl[:,:,1]))/(np.max(tmpImgtl[:,:,1])-np.min(tmpImgtl[:,:,1]))
-			tmpImg[:,:,5] = (tmpImgtl[:,:,2]-np.min(tmpImgtl[:,:,2]))/(np.max(tmpImgtl[:,:,2])-np.min(tmpImgtl[:,:,2]))
-
-			# tmpImg = tmpImg/(np.max(tmpImg)-np.min(tmpImg))
-
-			tmpImg[:,:,0] = (tmpImg[:,:,0]-np.mean(tmpImg[:,:,0]))/np.std(tmpImg[:,:,0])
-			tmpImg[:,:,1] = (tmpImg[:,:,1]-np.mean(tmpImg[:,:,1]))/np.std(tmpImg[:,:,1])
-			tmpImg[:,:,2] = (tmpImg[:,:,2]-np.mean(tmpImg[:,:,2]))/np.std(tmpImg[:,:,2])
-			tmpImg[:,:,3] = (tmpImg[:,:,3]-np.mean(tmpImg[:,:,3]))/np.std(tmpImg[:,:,3])
-			tmpImg[:,:,4] = (tmpImg[:,:,4]-np.mean(tmpImg[:,:,4]))/np.std(tmpImg[:,:,4])
-			tmpImg[:,:,5] = (tmpImg[:,:,5]-np.mean(tmpImg[:,:,5]))/np.std(tmpImg[:,:,5])
-
-		elif self.flag == 1: #with Lab color
-			tmpImg = np.zeros((image.shape[0],image.shape[1],3))
-
-			if image.shape[2]==1:
-				tmpImg[:,:,0] = image[:,:,0]
-				tmpImg[:,:,1] = image[:,:,0]
-				tmpImg[:,:,2] = image[:,:,0]
-			else:
-				tmpImg = image
-
-			tmpImg = color.rgb2lab(tmpImg)
-
-			# tmpImg = tmpImg/(np.max(tmpImg)-np.min(tmpImg))
-
-			tmpImg[:,:,0] = (tmpImg[:,:,0]-np.min(tmpImg[:,:,0]))/(np.max(tmpImg[:,:,0])-np.min(tmpImg[:,:,0]))
-			tmpImg[:,:,1] = (tmpImg[:,:,1]-np.min(tmpImg[:,:,1]))/(np.max(tmpImg[:,:,1])-np.min(tmpImg[:,:,1]))
-			tmpImg[:,:,2] = (tmpImg[:,:,2]-np.min(tmpImg[:,:,2]))/(np.max(tmpImg[:,:,2])-np.min(tmpImg[:,:,2]))
-
-			tmpImg[:,:,0] = (tmpImg[:,:,0]-np.mean(tmpImg[:,:,0]))/np.std(tmpImg[:,:,0])
-			tmpImg[:,:,1] = (tmpImg[:,:,1]-np.mean(tmpImg[:,:,1]))/np.std(tmpImg[:,:,1])
-			tmpImg[:,:,2] = (tmpImg[:,:,2]-np.mean(tmpImg[:,:,2]))/np.std(tmpImg[:,:,2])
-
-		else: # with rgb color
-			tmpImg = np.zeros((image.shape[0],image.shape[1],3))
-			image = image/np.max(image)
-			if image.shape[2]==1:
-				tmpImg[:,:,0] = (image[:,:,0]-0.485)/0.229
-				tmpImg[:,:,1] = (image[:,:,0]-0.485)/0.229
-				tmpImg[:,:,2] = (image[:,:,0]-0.485)/0.229
-			else:
-				tmpImg[:,:,0] = (image[:,:,0]-0.485)/0.229
-				tmpImg[:,:,1] = (image[:,:,1]-0.456)/0.224
-				tmpImg[:,:,2] = (image[:,:,2]-0.406)/0.225
-
-		tmpLbl[:,:,0] = label[:,:,0]
-
-
-		tmpImg = tmpImg.transpose((2, 0, 1))
-		tmpLbl = label.transpose((2, 0, 1))
-
-		return {'imidx':torch.from_numpy(imidx), 'image': torch.from_numpy(tmpImg), 'label': torch.from_numpy(tmpLbl)}
-
 class SalObjDataset(Dataset):
-	def __init__(self,img_name_list,lbl_name_list,transform=None):
-		# self.root_dir = root_dir
-		# self.image_name_list = glob.glob(image_dir+'*.png')
-		# self.label_name_list = glob.glob(label_dir+'*.png')
-		self.image_name_list = img_name_list
-		self.label_name_list = lbl_name_list
-		self.transform = transform
+    def __init__(self, img_name_list, lbl_name_list, transform=None):
+        self.image_name_list = img_name_list
+        self.label_name_list = lbl_name_list
+        self.transform = transform
 
-	def __len__(self):
-		return len(self.image_name_list)
+    def __len__(self):
+        return len(self.image_name_list)
 
-	def __getitem__(self,idx):
+    def __getitem__(self, idx):
+        image = io.imread(self.image_name_list[idx])
+        imidx = np.array([idx])
 
-		# image = Image.open(self.image_name_list[idx])#io.imread(self.image_name_list[idx])
-		# label = Image.open(self.label_name_list[idx])#io.imread(self.label_name_list[idx])
+        if len(self.label_name_list) == 0:
+            label_3 = np.zeros(image.shape)
+        else:
+            label_3 = io.imread(self.label_name_list[idx])
 
-		image = io.imread(self.image_name_list[idx])
-		imname = self.image_name_list[idx]
-		imidx = np.array([idx])
+        label = np.zeros(label_3.shape[0:2], dtype=np.float32)
+        if len(label_3.shape) == 3:
+            label = label_3[:, :, 0].astype(np.float32)
+        elif len(label_3.shape) == 2:
+            label = label_3.astype(np.float32)
 
-		if(0==len(self.label_name_list)):
-			label_3 = np.zeros(image.shape)
-		else:
-			label_3 = io.imread(self.label_name_list[idx])
+        if len(image.shape) == 3 and len(label.shape) == 2:
+            label = label[:, :, np.newaxis]
+        elif len(image.shape) == 2 and len(label.shape) == 2:
+            image = image[:, :, np.newaxis]
+            label = label[:, :, np.newaxis]
 
-		label = np.zeros(label_3.shape[0:2])
-		if(3==len(label_3.shape)):
-			label = label_3[:,:,0]
-		elif(2==len(label_3.shape)):
-			label = label_3
+        sample = {'imidx': imidx, 'image': image, 'label': label}
 
-		if(3==len(image.shape) and 2==len(label.shape)):
-			label = label[:,:,np.newaxis]
-		elif(2==len(image.shape) and 2==len(label.shape)):
-			image = image[:,:,np.newaxis]
-			label = label[:,:,np.newaxis]
+        if self.transform:
+            sample = self.transform(sample)
 
-		sample = {'imidx':imidx, 'image':image, 'label':label}
+        return sample
 
-		if self.transform:
-			sample = self.transform(sample)
 
-		return sample
+#--------------------------Transforms--------------------------
+
+class ResizeFixed(object):
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, sample):
+        image = sample["image"]
+        label = sample["label"]
+
+        img = transform.resize(image, (self.size, self.size), mode='constant')
+        lbl = transform.resize(label, (self.size, self.size), mode='constant', order=0, preserve_range=True)
+
+        # Normalize label to [0,1] for BCE
+        lbl = lbl.astype(np.float32)
+        if lbl.max() > 1.0:
+            lbl /= 255.0
+
+        sample["image"] = img
+        sample["label"] = lbl
+        return sample
+
+
+class RandomFlips(object):
+    def __init__(self, p_h=0.5, p_v=0.2):
+        self.p_h = p_h
+        self.p_v = p_v
+
+    def __call__(self, sample):
+        image = sample["image"]
+        label = sample["label"]
+
+        if np.random.rand() < self.p_h:
+            image = np.flip(image, axis=1).copy()
+            label = np.flip(label, axis=1).copy()
+
+        if np.random.rand() < self.p_v:
+            image = np.flip(image, axis=0).copy()
+            label = np.flip(label, axis=0).copy()
+
+        sample["image"] = image
+        sample["label"] = label
+        return sample
+
+
+class RandomBrightnessContrast(object):
+    def __init__(self, brightness=0.2, contrast=0.2, p=0.5):
+        self.aug = A.RandomBrightnessContrast(brightness_limit=brightness,
+                                              contrast_limit=contrast,
+                                              p=p)
+
+    def __call__(self, sample):
+        image = sample["image"]
+        label = sample["label"]
+        aug = self.aug(image=image, mask=label)
+        sample["image"] = aug["image"]
+        sample["label"] = aug["mask"]
+        return sample
+
+
+class Normalize01(object):
+    def __call__(self, sample):
+        image = sample["image"].astype(np.float32)
+        image = image / 255.0 if image.max() > 1.0 else image
+        sample["image"] = image
+        return sample
+
+
+class ToTensorDict(object):
+    def __call__(self, sample):
+        image = sample["image"]
+        label = sample["label"]
+
+        if image.ndim == 2:
+            image = image[:, :, np.newaxis]
+        if label.ndim == 2:
+            label = label[:, :, np.newaxis]
+
+        image = image.transpose((2, 0, 1))
+        label = label.transpose((2, 0, 1))
+
+        # copy pentru a evita negative strides
+        image_tensor = torch.from_numpy(image.copy()).float()
+        label_tensor = torch.from_numpy(label.copy()).float()
+
+        # clamp label pentru BCE între 0 și 1
+        label_tensor = torch.clamp(label_tensor, 0.0, 1.0)
+
+        sample["image"] = image_tensor
+        sample["label"] = label_tensor
+        return sample
+
+
+class HairRemoval(object):
+    def __init__(self, kernel_size=17, threshold=10, dilation_size=3, inpaint_radius=3):
+        self.kernel_size = kernel_size
+        self.threshold = threshold
+        self.dilation_size = dilation_size
+        self.inpaint_radius = inpaint_radius
+
+    def __call__(self, sample):
+        image = sample["image"]
+        img = (image * 255).astype(np.uint8) if image.max() <= 1.0 else image.astype(np.uint8)
+
+        if img.ndim == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = img
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.kernel_size, self.kernel_size))
+        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+        _, hair_mask = cv2.threshold(blackhat, self.threshold, 255, cv2.THRESH_BINARY)
+
+        if self.dilation_size > 0:
+            d_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.dilation_size, self.dilation_size))
+            hair_mask = cv2.dilate(hair_mask, d_kernel, 1)
+
+        inpainted = cv2.inpaint(img, hair_mask, self.inpaint_radius, cv2.INPAINT_TELEA)
+        sample["image"] = inpainted
+        return sample
+
+
+class BorderRemoval(object):
+    def __init__(self, threshold=10, min_border_width=5):
+        self.threshold = threshold
+        self.min_border_width = min_border_width
+
+    def __call__(self, sample):
+        img = sample["image"]
+
+        if img.ndim == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = img.copy()
+
+        h, w = gray.shape
+
+        def find_border(start, end, step, axis=0):
+            for i in range(start, end, step):
+                line = gray[i, :] if axis == 0 else gray[:, i]
+                if np.mean(line < self.threshold) < 0.95:
+                    return i
+            return start
+
+        top = find_border(0, h, 1, axis=0)
+        bottom = find_border(h - 1, -1, -1, axis=0)
+        left = find_border(0, w, 1, axis=1)
+        right = find_border(w - 1, -1, -1, axis=1)
+
+        if bottom <= top or right <= left:
+            sample["image"] = img
+            return sample
+
+        cropped = img[top:bottom + 1, left:right + 1].copy()  # copy pentru siguranță
+        sample["image"] = cropped
+        return sample
+
 
 class ComposeDict(object):
     def __init__(self, transforms):
@@ -215,51 +218,4 @@ class ComposeDict(object):
     def __call__(self, sample):
         for t in self.transforms:
             sample = t(sample)
-        return sample
-
-class PreprocessCustom(object):
-    def __init__(self, use_normalizare=True, use_zoom=False, use_augmentari=True, use_remediere=True):
-        self.use_normalizare = use_normalizare
-        self.use_zoom = use_zoom
-        self.use_augmentari = use_augmentari
-        self.use_remediere = use_remediere
-
-        # augmentari Albumentations
-        self.pipeline_aug = A.Compose([
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.2),
-            A.RandomRotate90(p=0.5),
-            A.RandomBrightnessContrast(p=0.5),
-            A.RandomResizedCrop(
-                size=(256, 256),
-                scale=(0.8, 1.0),
-                ratio=(0.75, 1.33),
-                interpolation=cv2.INTER_LINEAR,
-                p=0.3
-            )
-        ])
-
-    def normalizare_pixeli(self, img):
-        return img.astype(np.float32) / 255.0
-
-    def __call__(self, sample):
-        image = sample["image"]
-        label = sample["label"]
-
-        # 1. Augmentari Albumentations
-        if self.use_augmentari:
-            augmented = self.pipeline_aug(image=image, mask=label)
-            image = augmented["image"]
-            label = augmented["mask"]
-
-        # 2. Normalizare
-        if self.use_normalizare:
-            image = self.normalizare_pixeli(image)
-
-        # 3. Zoom
-        if self.use_zoom:
-            pass
-
-        sample["image"] = image
-        sample["label"] = label
         return sample

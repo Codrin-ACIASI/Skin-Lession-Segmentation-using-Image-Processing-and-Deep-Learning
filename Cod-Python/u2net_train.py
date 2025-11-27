@@ -1,19 +1,30 @@
 import os
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision import transforms
 import glob
 
-from preprocesare import RescaleT, RandomCrop, ToTensorLab, SalObjDataset, PreprocessCustom, ComposeDict
+from preprocesare import (
+    ResizeFixed,
+    RandomFlips,
+    RandomBrightnessContrast,
+    Normalize01,
+    ToTensorDict,
+    HairRemoval,
+    BorderRemoval,
+    ComposeDict,
+    SalObjDataset
+)
+
 from u2net import U2NET, U2NETP
 
 # ------------------ 1. LOSS FUNCTION ------------------
-bce_loss = nn.BCELoss(reduction='mean')  # actualizare warning
+bce_loss = nn.BCEWithLogitsLoss(reduction='mean')
+
 
 def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
+    labels_v = torch.clamp(labels_v, 0.0, 1.0)
     loss0 = bce_loss(d0, labels_v)
     loss1 = bce_loss(d1, labels_v)
     loss2 = bce_loss(d2, labels_v)
@@ -27,9 +38,10 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
           (loss0.item(), loss1.item(), loss2.item(), loss3.item(), loss4.item(), loss5.item(), loss6.item()))
     return loss0, loss
 
+
 # ------------------ 2. CONFIG ------------------
 model_name = 'u2net'  # sau 'u2netp'
-data_dir = r"C:\Users\Codrin\Desktop\PI-Proiect\Cod-Python\Dataset_training"
+data_dir = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\Dataset_training"
 tra_image_dir = os.path.join(data_dir, "ISBI2016_ISIC_Part1_Training_Data")
 tra_label_dir = os.path.join(data_dir, "ISBI2016_ISIC_Part1_Training_GroundTruth")
 image_ext = '.jpg'
@@ -39,11 +51,13 @@ os.makedirs(model_dir, exist_ok=True)
 
 epoch_num = 100000
 batch_size_train = 12
-batch_size_val = 1
 save_frq = 2000
+
 
 # ------------------ 3. MAIN FUNCTION ------------------
 def main():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     # ---- dataset ----
     tra_img_name_list = glob.glob(os.path.join(tra_image_dir, '*' + image_ext))
     tra_lbl_name_list = []
@@ -62,26 +76,17 @@ def main():
     print("train labels: ", len(tra_lbl_name_list))
     print("---")
 
-    preprocess_custom = PreprocessCustom(
-        use_normalizare=True,
-        use_zoom=False,
-        use_augmentari=True,
-        use_remediere=True
-    )
-
     salobj_dataset = SalObjDataset(
         img_name_list=tra_img_name_list,
         lbl_name_list=tra_lbl_name_list,
         transform=ComposeDict([
-            PreprocessCustom(
-                use_normalizare=True,
-                use_zoom=False,
-                use_augmentari=True,
-                use_remediere=False
-            ),
-            RescaleT(256),
-            RandomCrop(224),
-            ToTensorLab(flag=0)
+            BorderRemoval(threshold=10),
+            HairRemoval(kernel_size=17, threshold=10),
+            ResizeFixed(256),
+            RandomFlips(p_h=0.5, p_v=0.2),
+            RandomBrightnessContrast(brightness=0.2, contrast=0.2, p=0.5),
+            Normalize01(),
+            ToTensorDict()
         ])
     )
 
@@ -93,29 +98,31 @@ def main():
     )
 
     # ---- model ----
-    if model_name == 'u2net':
-        net = U2NET(3, 1)
-    else:
-        net = U2NETP(3, 1)
+    net = U2NET(3, 1) if model_name == 'u2net' else U2NETP(3, 1)
 
-    if torch.cuda.is_available():
-        net.cuda()
+    checkpoint_path = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\saved_models\u2net\u2net_bce_itr_2047_train_0.839_tar_0.113_interrupted.pth"
 
-    checkpoint_path = r"C:\Users\Codrin\Desktop\PI-Proiect\Cod-Python\saved_models\u2net\u2net_bce_itr_1041_train_1.627_tar_0.210_interrupted.pth"
+    # fallback CPU/GPU
+    try:
+        net.load_state_dict(torch.load(checkpoint_path))
+    except RuntimeError as e:
+        print(f"GPU loading failed ({e}), incercare CPU...")
+        net.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
 
-    net.load_state_dict(torch.load(checkpoint_path))
+    net.to(device)
 
     # ---- optimizer ----
     optimizer = optim.Adam(net.parameters(), lr=0.0001, betas=(0.9, 0.999))
-
-
     optimizer_checkpoint_path = checkpoint_path.replace('.pth', '_optimizer.pth')
     if os.path.exists(optimizer_checkpoint_path):
-        optimizer.load_state_dict(torch.load(optimizer_checkpoint_path))
+        try:
+            optimizer.load_state_dict(torch.load(optimizer_checkpoint_path))
+        except RuntimeError as e:
+            print(f"GPU optimizer loading failed ({e}), incercare CPU...")
+            optimizer.load_state_dict(torch.load(optimizer_checkpoint_path, map_location='cpu'))
 
     # ---- training loop ----
-
-    ite_num = 1041
+    ite_num = 2047
     running_loss = 0.0
     running_tar_loss = 0.0
     ite_num4val = 0
@@ -127,20 +134,15 @@ def main():
                 ite_num += 1
                 ite_num4val += 1
 
-                inputs, labels = data['image'], data['label']
-                inputs = inputs.type(torch.FloatTensor)
-                labels = labels.type(torch.FloatTensor)
+                inputs, labels = data['image'].float().to(device), data['label'].float().to(device)
 
-                if torch.cuda.is_available():
-                    inputs_v = Variable(inputs.cuda(), requires_grad=False)
-                    labels_v = Variable(labels.cuda(), requires_grad=False)
-                else:
-                    inputs_v = Variable(inputs, requires_grad=False)
-                    labels_v = Variable(labels, requires_grad=False)
+                # Debug label values
+                print("Label min/max:", labels.min().item(), labels.max().item())
+                labels = torch.clamp(labels, 0.0, 1.0)
 
                 optimizer.zero_grad()
-                d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
-                loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
+                d0, d1, d2, d3, d4, d5, d6 = net(inputs)
+                loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels)
 
                 loss.backward()
                 optimizer.step()
@@ -154,7 +156,6 @@ def main():
                       (epoch + 1, epoch_num, (i + 1) * batch_size_train, len(tra_img_name_list),
                        ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
 
-                # salvare la fiecare save_frq iteratii
                 if ite_num % save_frq == 0:
                     save_path = os.path.join(
                         model_dir,
@@ -179,6 +180,5 @@ def main():
         print(f"Model salvat la întrerupere: {save_path}")
 
 
-# ------------------ 4. RUN ------------------
 if __name__ == '__main__':
     main()
