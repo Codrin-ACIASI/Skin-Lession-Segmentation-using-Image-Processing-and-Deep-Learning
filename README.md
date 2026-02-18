@@ -7,14 +7,14 @@
 ## Cuprins
 
 1. [Introducere](#introducere)
-2. [Arhitectura U^2-Net](#arhitectura-u2-net)
-3. [Arhitectura proiectului](#arhitectura-proiectului)
+2. [Arhitectura proiectului](#arhitectura-proiectului)
     - [Input](#1-input)
     - [Etapa de preprocesare](#2-etapa-de-preprocesare)
     - [Etapa de segmentare](#3-etapa-de-segmentare-arhitectura-u2-net)
     - [Etapa de postprocesare](#4-etapa-de-postprocesare)
     - [Output](#5-output)
     - [Compararea rezultatelor](#6-compararea-rezultatelor)
+3. [Arhitectura U^2-Net](#arhitectura-u2-net)
 4. [Rezultate](#rezultate)
 5. [Componente Software și Hardware](#componente-software-și-hardware)
 6. [Referințe bibliografice](#referințe-bibliografice)
@@ -33,17 +33,9 @@ Scopul lucrării este reprezentat ca și experiment didactic despre modul în ca
 detectarea automată a leziunilor pielii față de metodele standard, parcurgând etapele complete de preprocesare, 
 antrenare deep learning și postprocesare a măștilor de segmentare, dar și o familiarizare mai amânuntă.
 
-## Arhitectura U^2-Net
-
-> **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net), scris de către Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane și Martin Jagersand
-
-![Schema u2-net](ImaginiProiect/schema_u2_net.png)
-
-> Această implementare are un caracter strict didactic. Deși aplicată pe un set de date medical (segmentarea leziunilor cutanate), **obiectivul principal al lucrării este aprofundarea tehnicilor avansate de Procesare a Imaginilor (Image Processing)** și înțelegerea modului în care rețelele neuronale profunde pot extrage caracteristici vizuale complexe. Secundar, proiectul urmărește familiarizarea cu provocările specifice imagisticii medicale (zgomot, contrast scăzut, forme neregulate).
-
 ## Arhitectura Proiectului
 
-![Schema bloc](ImaginiProiect/schema_bloc_pi.jpg)
+![Schema bloc](ImaginiProiect/Model_Implementare.png)
 
 ### 1\. Input 
 
@@ -134,12 +126,22 @@ leziunii pe piele.
 finalul implementării pentru a putea încheia experimentul didactic și de
 a compara rezultatele lucrării cu alte lucrări științifice.
 
+## Arhitectura U^2-Net
+
+> **Notă:** Această implementare are la bază codul sursă original al lucrării [U^2-Net](https://github.com/xuebinqin/U-2-Net), scris de către Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane și Martin Jagersand
+
+![Schema u2-net](ImaginiProiect/schema_u2_net.png)
+
+> Această implementare are un caracter strict didactic. Deși aplicată pe un set de date medical (segmentarea leziunilor cutanate), **obiectivul principal al lucrării este aprofundarea tehnicilor avansate de Procesare a Imaginilor (Image Processing)** și înțelegerea modului în care rețelele neuronale profunde pot extrage caracteristici vizuale complexe. Secundar, proiectul urmărește familiarizarea cu provocările specifice imagisticii medicale (zgomot, contrast scăzut, forme neregulate).
+
 ## Rezultate
-  - to-do
+  - Performanța sistemului de segmentare bazat pe arhitectura U²-Net a fost evaluată utilizând două seturi de date standard din domeniul imagisticii dermatologice: ISIC 2016 și ISIC 2018. 
+  - Pentru setul de date ISIC 2018, modelul a obținut un Mean Dice de 0.8593 și un Mean Jaccard de 0.7882. Aceste rezultate indică o bună suprapunere între măștile de segmentare generate automat și măștile de referință (ground truth), demonstrând capacitatea arhitecturii U²-Net de a capta atât detaliile fine ale conturului leziunilor, cât și structura globală a acestora, în ciuda variabilității ridicate a imaginilor (dimensiuni, contraste, forme neregulate).
+  - În cazul setului de date ISIC 2016, performanțele obținute sunt superioare, cu un Mean Dice de 0.9022 și un Mean Jaccard de 0.8317. Această creștere a performanței poate fi atribuită gradului mai redus de complexitate al imaginilor din ISIC 2016 comparativ cu ISIC 2018, precum și unei variabilități mai scăzute a leziunilor și condițiilor de achiziție. Valorile obținute confirmă stabilitatea și capacitatea de generalizare a modelului implementat.
 
 ## Componente Software și Hardware
     
-- software: VisualStudio Code, Python 3.14
+- software: PyCharm 2025.3.1.1 , Python 3.14
 - hardware: <br/>
        - procesor: AMD Ryzen™ AI 9 HX 370 <br/>
        - ram: 32GB LPDDR5X 7500 <br/>
@@ -155,6 +157,7 @@ a compara rezultatele lucrării cu alte lucrări științifice.
 | 3 | Bill S. Lin / 2017 | Skin Lesion Segmentation: U-Nets versus Clustering | Segmentarea leziunilor pielii | U-Nets, Clustering C-Means, Preprocesare bazată pe egalizarea histogramei | Compararea U-Nets (cu preprocesare) și o variantă minimalizată cu Clustering C-Means | Rezultate pozitive pentru segmentare utilizând U-Nets. Rețeaua a necesitat doar 1% din numărul de iterații de antrenament comparativ cu alte metode. | Deoarece nu este folosită o placă video, numărul de operații de antrenare este extrem de limitat | În viitor ar fi interesant de analizat dacă pasul de preprocesare (egalizarea histogramei) îmbunătățește semnificativ performanța segmentării prin modificarea numărului de epoci al U-Net-ului și folosirea unui GPU |
 | 4 | Ali Karimi / 2023 | DEU-Net: Dual-Encoder U-Net for Automated Skin Lesion Segmentation | Segmentarea leziunilor pielii | Dual-Encoder U-Net, Transformer Encoder, Convolutional Encoder, Arhitectură Encoder-Decoder | Utilizarea unei noi rețele U-Net care folosește o ramură duală de encodere (CNN și Transformer) pentru a extrage simultan caracteristici locale și informații contextuale globale | DEU-Net a obținut performanțe superioare metodelor de ultimă generație pe seturile ISIC-2016-2017-2018 și PH2 | Modelul are dificultăți în segmentarea leziunilor cu margini foarte neregulate sau contrast redus între leziune și piele | Autorii propun, pentru lucrări viitoare, optimizarea mecanismului de fuziune dintre cele două ramuri encoder |
 | 5 | Manoranjan Dash / 2019 | PsLSNet: Automated psoriasis skin lesion segmentation using modified U-Net-based fully convolutional network | Segmentarea leziunilor pielii | Psoriasis Lesion Segmentation Network, Modified U-Net, Fully Convolutional Network, Deep Learning | Propunerea unei rețele FCN bazate pe o arhitectură U-Net modificată pentru a aborda dificultățile de segmentare ale leziunilor psoriazice (iluminare slabă, forme neregulate, margini neclare) | Modelul a obținut o acuratețe de 94,80%, coeficient Dice de 93,03% și index Jaccard de 86,40% | Scăderea performanței în prezența părului, luminii slabe, umbrelor și contrastului redus între leziune și pielea sănătoasă | Extinderea bazei de date și integrarea evaluării automate a severității psoriazisului. Modelul poate detecta și zone de piele sănătoasă în interiorul leziunilor, lucru pe care metodele anterioare nu îl reușeau |
+
 
 
 

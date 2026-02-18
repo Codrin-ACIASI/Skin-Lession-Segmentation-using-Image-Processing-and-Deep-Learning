@@ -13,8 +13,6 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from PIL import Image
 
-#==========================dataset load==========================
-
 class SalObjDataset(Dataset):
     def __init__(self, img_name_list, lbl_name_list, transform=None):
         self.image_name_list = img_name_list
@@ -53,8 +51,6 @@ class SalObjDataset(Dataset):
         return sample
 
 
-#--------------------------Transforms--------------------------
-
 class ResizeFixed(object):
     def __init__(self, size):
         self.size = size
@@ -66,8 +62,9 @@ class ResizeFixed(object):
         img = transform.resize(image, (self.size, self.size), mode='constant')
         lbl = transform.resize(label, (self.size, self.size), mode='constant', order=0, preserve_range=True)
 
-        # Normalize label to [0,1] for BCE
+
         lbl = lbl.astype(np.float32)
+
         if lbl.max() > 1.0:
             lbl /= 255.0
 
@@ -134,11 +131,9 @@ class ToTensorDict(object):
         image = image.transpose((2, 0, 1))
         label = label.transpose((2, 0, 1))
 
-        # copy pentru a evita negative strides
         image_tensor = torch.from_numpy(image.copy()).float()
         label_tensor = torch.from_numpy(label.copy()).float()
 
-        # clamp label pentru BCE între 0 și 1
         label_tensor = torch.clamp(label_tensor, 0.0, 1.0)
 
         sample["image"] = image_tensor
@@ -206,7 +201,7 @@ class BorderRemoval(object):
             sample["image"] = img
             return sample
 
-        cropped = img[top:bottom + 1, left:right + 1].copy()  # copy pentru siguranță
+        cropped = img[top:bottom + 1, left:right + 1].copy()
         sample["image"] = cropped
         return sample
 

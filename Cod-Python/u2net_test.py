@@ -75,12 +75,13 @@ def main():
     image_dir = os.path.join(os.getcwd(), 'Dataset_test', 'ISBI2016_ISIC_Part1_Test_Data')
     gt_dir = os.path.join(os.getcwd(), 'Dataset_test', 'ISBI2016_ISIC_Part1_Test_GroundTruth')
     prediction_dir = os.path.join(os.getcwd(), 'Dataset_test', model_name + '_results')
-    model_path = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\saved_models\u2net\u2net_bce_itr_1469_train_0.951_tar_0.127_interrupted.pth"
+    model_path = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\saved_models\u2net\u2net_bce_itr_2442_train_4.283_tar_0.611_interrupted.pth"
 
     img_name_list = glob.glob(os.path.join(image_dir, '*'))
     print(f"{len(img_name_list)} imagini gasite pentru test.")
 
-    # Dataset + DataLoader cu transformari noi
+    # Dataset + DataLoader
+
     test_dataset = SalObjDataset(
         img_name_list=img_name_list,
         lbl_name_list=[],
@@ -114,7 +115,8 @@ def main():
 
     for i_test, data_test in enumerate(test_dataloader):
         inputs_test = data_test['image'].float().to(device)
-        batch_names = data_test['imidx']  # lista de indici ai imaginilor din batch
+
+        batch_names = data_test['imidx'] 
 
         try:
             with torch.no_grad():

@@ -100,7 +100,7 @@ def main():
     # ---- model ----
     net = U2NET(3, 1) if model_name == 'u2net' else U2NETP(3, 1)
 
-    checkpoint_path = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\saved_models\u2net\u2net_bce_itr_2047_train_0.839_tar_0.113_interrupted.pth"
+    checkpoint_path = r"C:\Users\Codrin\Desktop\PI-Proiect\CodPI\Cod-Python\saved_models\u2net\u2net_bce_itr_2442_train_4.283_tar_0.611_interrupted.pth"
 
     # fallback CPU/GPU
     try:
